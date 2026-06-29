@@ -3,22 +3,42 @@
 <head>
 <meta charset="UTF-8">
 <title>Click the Box</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 <style>
   * { box-sizing: border-box; }
   body {
     margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-family: 'Press Start 2P', monospace;
     background: #000000;
     color: #ffffff;
     height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
+    overflow: hidden;
+    image-rendering: pixelated;
   }
   #app {
     width: 100%;
     height: 100%;
     position: relative;
+  }
+  #app::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+      to bottom,
+      rgba(255,255,255,0.05) 0px,
+      rgba(255,255,255,0.05) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+    mix-blend-mode: overlay;
+    z-index: 50;
   }
   .screen {
     position: absolute;
@@ -27,32 +47,43 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 16px;
+    gap: 28px;
     padding: 24px;
     text-align: center;
   }
-  h1 { font-size: 28px; margin: 0; letter-spacing: 0.05em; }
-  p { color: #bbbbbb; margin: 0; max-width: 420px; }
-  .btn {
-    background: #ffffff;
-    color: #000000;
-    border: 1px solid #ffffff;
-    padding: 12px 24px;
-    border-radius: 4px;
-    font-size: 16px;
-    cursor: pointer;
+  h1 {
+    font-size: 28px;
+    margin: 0;
+    letter-spacing: 0.08em;
   }
-  .btn:hover { background: #cccccc; }
-  .btn.secondary { background: #000000; color: #ffffff; border: 1px solid #ffffff; }
-  .btn.secondary:hover { background: #1a1a1a; }
-  .diffRow { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+  p { color: #bbbbbb; margin: 0; max-width: 420px; font-size: 12px; line-height: 1.8; }
+  .btn {
+    font-family: 'Press Start 2P', monospace;
+    background: #000000;
+    color: #ffffff;
+    border: 3px solid #ffffff;
+    padding: 14px 22px;
+    border-radius: 0;
+    font-size: 13px;
+    cursor: pointer;
+    box-shadow: 4px 4px 0 #ffffff;
+    transition: transform 0.05s ease;
+  }
+  .btn:hover { background: #ffffff; color: #000000; }
+  .btn:active { transform: translate(4px, 4px); box-shadow: 0 0 0 #ffffff; }
+  .btn.secondary { background: #000000; color: #ffffff; }
+  .btn.secondary:hover { background: #1a1a1a; color: #ffffff; }
+  .diffRow { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; }
   .box {
     position: absolute;
     width: 60px;
     height: 60px;
     background: #ffffff;
-    border-radius: 4px;
+    border-radius: 0;
     cursor: pointer;
+    box-shadow:
+      0 0 0 3px #000000,
+      0 0 0 6px #ffffff;
   }
   .box:hover { background: #dddddd; }
   .levelLabel {
@@ -61,6 +92,95 @@
     left: 16px;
     font-size: 14px;
     color: #777777;
+  }
+  .quitBtn {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+  }
+
+  /* --- 8-bit title effect --- */
+  .arcade-title-wrap {
+    position: relative;
+    line-height: 1.6;
+  }
+  .arcade-title {
+    font-size: 32px;
+    margin: 0;
+    color: #ffffff;
+    letter-spacing: 0.12em;
+    position: relative;
+    display: inline-block;
+    animation: flicker 4s infinite steps(1);
+    text-shadow:
+      3px 0 0 #000000,
+      -3px 0 0 #000000,
+      0 3px 0 #000000,
+      0 -3px 0 #000000,
+      4px 4px 0 #ffffff;
+  }
+  .arcade-title::before,
+  .arcade-title::after {
+    content: attr(data-text);
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    overflow: hidden;
+    color: #ffffff;
+  }
+  .arcade-title::before {
+    animation: glitchTop 5s infinite linear;
+    clip-path: inset(0 0 60% 0);
+    transform: translate(-2px, -1px);
+  }
+  .arcade-title::after {
+    animation: glitchBottom 6s infinite linear;
+    clip-path: inset(60% 0 0 0);
+    transform: translate(2px, 1px);
+  }
+  @keyframes flicker {
+    0%, 92%, 100% { opacity: 1; }
+    93% { opacity: 0.3; }
+    94% { opacity: 1; }
+    95% { opacity: 0.5; }
+    96% { opacity: 1; }
+  }
+  @keyframes glitchTop {
+    0%, 89%, 100% { transform: translate(-2px, -1px); opacity: 0; }
+    90% { transform: translate(-6px, -2px); opacity: 0.8; }
+    91% { transform: translate(3px, -1px); opacity: 0.8; }
+    92% { transform: translate(-2px, -1px); opacity: 0; }
+  }
+  @keyframes glitchBottom {
+    0%, 79%, 100% { transform: translate(2px, 1px); opacity: 0; }
+    80% { transform: translate(6px, 2px); opacity: 0.8; }
+    81% { transform: translate(-3px, 1px); opacity: 0.8; }
+    82% { transform: translate(2px, 1px); opacity: 0; }
+  }
+  .blink-cursor {
+    display: inline-block;
+    width: 14px;
+    height: 28px;
+    background: #ffffff;
+    margin-left: 10px;
+    vertical-align: middle;
+    animation: cursorBlink 1s steps(1) infinite;
+  }
+  @keyframes cursorBlink {
+    0%, 50% { opacity: 1; }
+    50.01%, 100% { opacity: 0; }
+  }
+  .insert-coin {
+    font-size: 11px;
+    color: #ffffff;
+    margin-top: -6px;
+    animation: coinBlink 1.2s steps(1) infinite;
+    letter-spacing: 0.15em;
+  }
+  @keyframes coinBlink {
+    0%, 50% { opacity: 1; }
+    50.01%, 100% { opacity: 0.15; }
   }
 </style>
 </head>
@@ -120,7 +240,10 @@ function App() {
   let content;
   if (screen === 'menu') {
     content = e('div', { className: 'screen' },
-      e('h1', null, 'Click the Box'),
+      e('div', { className: 'arcade-title-wrap' },
+        e('h1', { className: 'arcade-title', 'data-text': 'CLICK THE BOX' }, 'CLICK THE BOX')
+      ),
+      e('div', { className: 'insert-coin' }, 'PRESS START'),
       e('button', { className: 'btn', onClick: () => setScreen('difficulty') }, 'Start')
     );
   } else if (screen === 'difficulty') {
@@ -136,7 +259,7 @@ function App() {
   } else if (screen === 'game') {
     content = e(GameScreen, {
       level, difficulty,
-      onLevelComplete, onFail: backToMenu
+      onLevelComplete, onFail, onQuit: backToMenu
     });
   } else if (screen === 'win') {
     content = e('div', { className: 'screen' },
@@ -153,7 +276,7 @@ function App() {
   return e('div', { id: 'app', ref: appRef }, content);
 }
 
-function GameScreen({ level, difficulty, onLevelComplete, onFail }) {
+function GameScreen({ level, difficulty, onLevelComplete, onFail, onQuit }) {
   const containerRef = useRef(null);
   const [dims, setDims] = useState({ w: window.innerWidth, h: window.innerHeight });
 
