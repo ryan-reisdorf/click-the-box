@@ -182,12 +182,34 @@
     0%, 50% { opacity: 1; }
     50.01%, 100% { opacity: 0.15; }
   }
+  .fact-text {
+    position: absolute;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    max-width: 80vw;
+    font-size: 11px;
+    color: #ffffff;
+    text-align: center;
+    line-height: 1.7;
+    letter-spacing: 0.04em;
+    padding: 14px 18px;
+    border: 2px solid #ffffff;
+    background: #000000;
+    box-shadow: 4px 4px 0 #ffffff;
+    animation: factFade 0.3s steps(2);
+  }
+  @keyframes factFade {
+    0% { opacity: 0; }
+    100% { opacity: 1; }
+  }
 </style>
 </head>
 <body>
 <div id="app"></div>
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="facts.js"></script>
 <script>
 const { useState, useEffect, useRef } = React;
 const e = React.createElement;
@@ -349,7 +371,43 @@ function Level3({ dims, difficulty, onLevelComplete, onFail }) {
 
   const [boxVisible, setBoxVisible] = useState(false);
   const [pos, setPos] = useState(() => randomPos(dims.w, dims.h, size));
+  const [currentFact, setCurrentFact] = useState(null);
   const resolvedRef = useRef(false);
+  const boxVisibleRef = useRef(false);
+
+  useEffect(() => { boxVisibleRef.current = boxVisible; }, [boxVisible]);
+
+  // Random flavor facts during the wait — hard mode only. Purely cosmetic,
+  // never tied to timing/position, so they give no real gameplay info.
+  useEffect(() => {
+    if (difficulty !== 'hard') return;
+    let showTimeout, hideTimeout;
+
+    function scheduleNextFact() {
+      const delay = 4000 + Math.random() * 9000; // 4–13s between facts
+      showTimeout = setTimeout(() => {
+        if (resolvedRef.current || boxVisibleRef.current) { scheduleNextFact(); return; }
+        const fact = FACTS[Math.floor(Math.random() * FACTS.length)];
+        setCurrentFact(fact);
+        const displayTime = 3500 + Math.random() * 2500; // 3.5–6s shown
+        hideTimeout = setTimeout(() => {
+          setCurrentFact(null);
+          scheduleNextFact();
+        }, displayTime);
+      }, delay);
+    }
+
+    scheduleNextFact();
+    return () => {
+      clearTimeout(showTimeout);
+      clearTimeout(hideTimeout);
+    };
+  }, [difficulty]);
+
+  // Hide any visible fact the instant the box appears.
+  useEffect(() => {
+    if (boxVisible) setCurrentFact(null);
+  }, [boxVisible]);
 
   useEffect(() => {
     let showTimer, hideTimer, checkInterval;
@@ -391,6 +449,7 @@ function Level3({ dims, difficulty, onLevelComplete, onFail }) {
 
   return e(React.Fragment, null,
     !boxVisible && e('div', { className: 'screen' }),
+    !boxVisible && currentFact && e('div', { className: 'fact-text' }, currentFact),
     boxVisible && e(Box, { x: pos.x, y: pos.y, size, onClick: handleClick })
   );
 }
