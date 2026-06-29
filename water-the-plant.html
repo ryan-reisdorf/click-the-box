@@ -251,6 +251,12 @@
     transition: opacity 0.6s ease, transform 0.6s ease;
   }
   .flower.show { opacity: 1; transform: scale(1); }
+  .flower.bloomed { animation: bloomPulse 0.9s ease-out; }
+  @keyframes bloomPulse {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.35); }
+    100% { transform: scale(1); }
+  }
   .petal {
     position: absolute;
     width: 16px;
@@ -322,10 +328,15 @@
 const { useState, useEffect, useRef } = React;
 const e = React.createElement;
 
+// Water gauge always depletes fully over 30 real minutes, and each click
+// refills exactly 5 minutes' worth, regardless of difficulty.
+const THIRST_DECAY = 100 / (30 * 60 * 5);   // per 200ms tick (5 ticks/sec)
+const WATER_PER_CLICK = 100 / (30 / 5);     // 5 minutes worth out of a 30-minute gauge
+
 const DIFFICULTY_SETTINGS = {
-  easy:   { thirstDecay: 2.2, growthRate: 0.9, waterAmount: 28, wiltRate: 1.2 },
-  normal: { thirstDecay: 3.4, growthRate: 0.75, waterAmount: 22, wiltRate: 1.8 },
-  hard:   { thirstDecay: 5.0, growthRate: 0.6, waterAmount: 16, wiltRate: 2.6 }
+  easy:   { thirstDecay: THIRST_DECAY, growthRate: 0.05556,   waterAmount: WATER_PER_CLICK, wiltRate: 0.05 },
+  normal: { thirstDecay: THIRST_DECAY, growthRate: 0.01389,   waterAmount: WATER_PER_CLICK, wiltRate: 0.02 },
+  hard:   { thirstDecay: THIRST_DECAY, growthRate: 0.003472,  waterAmount: WATER_PER_CLICK, wiltRate: 0.01 }
 };
 
 function LevelBanner({ title, instructions }) {
@@ -335,14 +346,14 @@ function LevelBanner({ title, instructions }) {
   );
 }
 
-function Plant({ growth, wilted }) {
+function Plant({ growth, wilted, bloomed }) {
   const stemHeight = 20 + growth * 1.6; // px
   const showLeaf1 = growth > 20;
   const showLeaf2 = growth > 50;
-  const showFlower = growth >= 95;
+  const showFlower = growth >= 90;
 
   return e('div', { className: 'plant-wrap' },
-    showFlower && e('div', { className: 'flower show' },
+    showFlower && e('div', { className: 'flower show' + (bloomed ? ' bloomed' : '') },
       e('div', { className: 'petal' }),
       e('div', { className: 'petal' }),
       e('div', { className: 'petal' }),
@@ -361,14 +372,15 @@ function Plant({ growth, wilted }) {
   );
 }
 
-function GameScreen({ difficulty, onWin, onQuit }) {
+function GameScreen({ difficulty, onWin, onLose }) {
   const settings = DIFFICULTY_SETTINGS[difficulty];
   const [growth, setGrowth] = useState(0);
-  const [thirst, setThirst] = useState(100);
   const [wilted, setWilted] = useState(false);
+  const [bloomed, setBloomed] = useState(false);
   const growthRef = useRef(0);
   const thirstRef = useRef(100);
   const resolvedRef = useRef(false);
+  const overwaterTimeoutRef = useRef(null);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -376,10 +388,10 @@ function GameScreen({ difficulty, onWin, onQuit }) {
       let t = thirstRef.current - settings.thirstDecay * 0.2;
       t = Math.max(0, Math.min(100, t));
       thirstRef.current = t;
-      setThirst(t);
 
       let g = growthRef.current;
-      if (t > 0) {
+      const healthy = t > 0 && t <= 100;
+      if (healthy) {
         g += settings.growthRate * 0.2;
         setWilted(false);
       } else {
@@ -390,35 +402,40 @@ function GameScreen({ difficulty, onWin, onQuit }) {
       growthRef.current = g;
       setGrowth(g);
 
+      if (g <= 0 && !resolvedRef.current) {
+        resolvedRef.current = true;
+        onLose();
+        return;
+      }
       if (g >= 100 && !resolvedRef.current) {
         resolvedRef.current = true;
-        onWin();
+        setBloomed(true);
+        setTimeout(() => onWin(), 1000);
       }
     }, 200);
     return () => clearInterval(interval);
-  }, [settings, onWin]);
+  }, [settings, onWin, onLose]);
 
   function handleWater() {
     if (resolvedRef.current) return;
-    let t = Math.min(100, thirstRef.current + settings.waterAmount);
-    thirstRef.current = t;
-    setThirst(t);
+    const cur = thirstRef.current;
+    if (cur >= 100) {
+      // Overwatering — the plant wilts instead of benefiting.
+      growthRef.current = Math.max(0, growthRef.current - 4);
+      setGrowth(growthRef.current);
+      setWilted(true);
+      clearTimeout(overwaterTimeoutRef.current);
+      overwaterTimeoutRef.current = setTimeout(() => {
+        if (thirstRef.current < 100) setWilted(false);
+      }, 1200);
+      return;
+    }
+    thirstRef.current = Math.min(100, cur + settings.waterAmount);
   }
 
   return e('div', { className: 'scene', onClick: handleWater },
     e(LevelBanner, { title: 'WATER THE PLANT', instructions: 'CLICK ANYWHERE TO WATER' }),
-    e('div', { className: 'meter-wrap' },
-      e('div', { className: 'meter-label' }, 'GROWTH'),
-      e('div', { className: 'meter' },
-        e('div', { className: 'meter-fill', style: { width: growth + '%' } })
-      ),
-      e('div', { className: 'meter-label' }, 'WATER'),
-      e('div', { className: 'meter thirst' },
-        e('div', { className: 'meter-fill', style: { width: thirst + '%' } })
-      ),
-      e('div', { className: 'can-hint' }, wilted ? 'WILTING — WATER IT NOW' : ' ')
-    ),
-    e(Plant, { growth, wilted }),
+    e(Plant, { growth, wilted, bloomed }),
     e('div', { className: 'ground' })
   );
 }
@@ -470,7 +487,7 @@ function App() {
       e('button', { className: 'btn secondary', onClick: backToMenu }, 'Back')
     );
   } else if (screen === 'game') {
-    content = e(GameScreen, { difficulty, onWin: () => setScreen('win'), onQuit: backToMenu });
+    content = e(GameScreen, { difficulty, onWin: () => setScreen('win'), onLose: backToMenu });
   } else if (screen === 'win') {
     content = e('div', { className: 'screen' },
       e('h1', null, 'FULLY GROWN'),
