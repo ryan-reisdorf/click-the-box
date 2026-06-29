@@ -121,44 +121,55 @@
   .tree-scene { position: absolute; inset: 0; }
   .ground { position: absolute; bottom: 0; left: 0; width: 100%; height: 6px; background: #ffffff; }
 
-  /* trunk: tall, slightly curved palm trunk */
-  .trunk {
-    position: absolute; bottom: 6px; left: 50%;
-    width: 34px; height: 60vh; max-height: 460px;
-    transform: translateX(-50%) rotate(-3deg);
-    transform-origin: bottom center;
-    background: repeating-linear-gradient(
-      to bottom,
-      #ffffff 0px, #ffffff 14px,
-      #000000 14px, #000000 18px
-    );
-    clip-path: polygon(38% 0, 62% 0, 72% 100%, 28% 100%);
+  /* The palm is drawn as outlined (hollow) pixel shapes — black/white only,
+     matching a stepped base, thin trunk, and long drooping outlined fronds. */
+  .palm {
+    position: absolute;
+    bottom: 6px; left: 50%;
+    transform: translateX(-50%);
+    width: 360px; height: 60vh; max-height: 520px;
+    z-index: 5;
   }
 
-  /* crown of fronds at the top of the trunk */
-  .crown {
-    position: absolute; top: 8vh; left: 50%;
-    transform: translateX(-50%);
-    width: 0; height: 0; z-index: 5;
+  /* stepped base — tiered pedestal */
+  .palm .base-1 { position: absolute; bottom: 0;  left: 50%; transform: translateX(-50%); width: 150px; height: 12px; border: 4px solid #ffffff; background: #000000; }
+  .palm .base-2 { position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); width: 110px; height: 12px; border: 4px solid #ffffff; background: #000000; }
+
+  /* thin trunk */
+  .palm .trunk {
+    position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%);
+    width: 16px; height: calc(100% - 24px - 30%);
+    border-left: 4px solid #ffffff;
+    border-right: 4px solid #ffffff;
+    background: #000000;
   }
+
+  /* crown anchor at top of trunk */
+  .palm .crown {
+    position: absolute; top: 26%; left: 50%;
+    transform: translateX(-50%);
+    width: 0; height: 0; z-index: 6;
+  }
+  /* each frond is a long, thin, outlined (hollow) curved blade */
   .frond {
     position: absolute;
-    width: 200px; height: 40px;
-    background: #ffffff;
-    border-radius: 0 100% 0 100%;
+    width: 130px; height: 26px;
+    border: 4px solid #ffffff;
+    background: #000000;
+    border-radius: 0 80% 0 80%;
     top: 0; left: 0;
-    transform-origin: 0% 50%;
-    opacity: 0.92;
+    transform-origin: 8% 50%;
   }
-  .frond.f1 { transform: rotate(8deg); }
-  .frond.f2 { transform: rotate(40deg); }
-  .frond.f3 { transform: rotate(140deg) scaleY(-1); }
-  .frond.f4 { transform: rotate(172deg) scaleY(-1); }
-  .frond.f5 { transform: rotate(-20deg); width: 170px; }
-  .frond.f6 { transform: rotate(200deg) scaleY(-1); width: 170px; }
-  .crown-center {
-    position: absolute; top: -10px; left: -12px;
-    width: 24px; height: 24px; background: #ffffff; border-radius: 50%;
+  .frond.f1 { transform: rotate(-2deg); }
+  .frond.f2 { transform: rotate(34deg); }
+  .frond.f3 { transform: rotate(70deg); width: 110px; }
+  .frond.f4 { transform: rotate(182deg) scaleY(-1); }
+  .frond.f5 { transform: rotate(150deg) scaleY(-1); }
+  .frond.f6 { transform: rotate(110deg) scaleY(-1); width: 110px; }
+  .palm .crown-center {
+    position: absolute; top: -8px; left: -8px;
+    width: 16px; height: 16px; border: 4px solid #ffffff; background: #000000; border-radius: 50%;
+    z-index: 7;
   }
 
   /* --- coconuts --- */
@@ -353,15 +364,19 @@ function GameScreen({ count, setCount }) {
   return e('div', { className: 'tree-scene' },
     e(LevelBanner, { title: 'COCONUTS FROM THE PALM TREE', instructions: 'CLICK RIPE COCONUTS TO PICK' }),
     e('div', { className: 'coconut-counter' }, 'COCONUTS: ' + count),
-    e('div', { className: 'trunk' }),
-    e('div', { className: 'crown' },
-      e('div', { className: 'frond f1' }),
-      e('div', { className: 'frond f2' }),
-      e('div', { className: 'frond f3' }),
-      e('div', { className: 'frond f4' }),
-      e('div', { className: 'frond f5' }),
-      e('div', { className: 'frond f6' }),
-      e('div', { className: 'crown-center' })
+    e('div', { className: 'palm' },
+      e('div', { className: 'base-1' }),
+      e('div', { className: 'base-2' }),
+      e('div', { className: 'trunk' }),
+      e('div', { className: 'crown' },
+        e('div', { className: 'frond f1' }),
+        e('div', { className: 'frond f2' }),
+        e('div', { className: 'frond f3' }),
+        e('div', { className: 'frond f4' }),
+        e('div', { className: 'frond f5' }),
+        e('div', { className: 'frond f6' }),
+        e('div', { className: 'crown-center' })
+      )
     ),
     slots.map((s, i) => {
       // Coconut grows from a small nub to full size over its ripen duration,
