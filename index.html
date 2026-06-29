@@ -203,6 +203,29 @@
     0% { opacity: 0; }
     100% { opacity: 1; }
   }
+  .level-banner {
+    position: absolute;
+    top: 32px;
+    left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+    z-index: 20;
+  }
+  .level-banner .banner-title {
+    font-size: 16px;
+    letter-spacing: 0.15em;
+    color: #ffffff;
+    border: 2px solid #ffffff;
+    padding: 10px 18px;
+    background: #000000;
+    box-shadow: 3px 3px 0 #ffffff;
+  }
+  .level-banner .banner-instructions {
+    margin-top: 14px;
+    font-size: 10px;
+    color: #bbbbbb;
+    letter-spacing: 0.05em;
+  }
 </style>
 </head>
 <body>
@@ -315,19 +338,37 @@ function GameScreen({ level, difficulty, onLevelComplete, onFail, onQuit }) {
   );
 }
 
+function LevelBanner({ title, instructions }) {
+  return e('div', { className: 'level-banner' },
+    e('div', { className: 'banner-title' }, title),
+    instructions && e('div', { className: 'banner-instructions' }, instructions)
+  );
+}
+
 function Level1({ dims, onLevelComplete }) {
   const size = 60;
-  const [pos] = useState(() => randomPos(dims.w, dims.h, size));
-  return e(Box, { x: pos.x, y: pos.y, size, onClick: onLevelComplete });
+  const pos = { x: dims.w / 2 - size / 2, y: dims.h / 2 - size / 2 };
+  return e(React.Fragment, null,
+    e(LevelBanner, { title: 'LEVEL 1', instructions: 'CLICK THE BOX TO CONTINUE' }),
+    e(Box, { x: pos.x, y: pos.y, size, onClick: onLevelComplete })
+  );
 }
 
 function Level2({ dims, onLevelComplete }) {
   const size = 60;
-  const [pos, setPos] = useState(() => randomPos(dims.w, dims.h, size));
+  const center = { x: dims.w / 2 - size / 2, y: dims.h / 2 - size / 2 };
+  const [pos, setPos] = useState(center);
+  const [moving, setMoving] = useState(false);
   const velRef = useRef({ vx: (Math.random() > 0.5 ? 1 : -1) * 2.5, vy: (Math.random() > 0.5 ? 1 : -1) * 2.5 });
-  const posRef = useRef(pos);
+  const posRef = useRef(center);
 
   useEffect(() => {
+    const t = setTimeout(() => setMoving(true), 1500);
+    return () => clearTimeout(t);
+  }, []);
+
+  useEffect(() => {
+    if (!moving) return;
     let raf;
     function tick() {
       let { x, y } = posRef.current;
@@ -342,9 +383,12 @@ function Level2({ dims, onLevelComplete }) {
     }
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [dims.w, dims.h]);
+  }, [moving, dims.w, dims.h]);
 
-  return e(Box, { x: pos.x, y: pos.y, size, onClick: onLevelComplete });
+  return e(React.Fragment, null,
+    e(LevelBanner, { title: 'LEVEL 2' }),
+    e(Box, { x: pos.x, y: pos.y, size, onClick: onLevelComplete })
+  );
 }
 
 // Level 3: pick a random target time within range based on difficulty.
@@ -448,6 +492,7 @@ function Level3({ dims, difficulty, onLevelComplete, onFail }) {
   }
 
   return e(React.Fragment, null,
+    e(LevelBanner, { title: 'LEVEL 3' }),
     !boxVisible && e('div', { className: 'screen' }),
     !boxVisible && currentFact && e('div', { className: 'fact-text' }, currentFact),
     boxVisible && e(Box, { x: pos.x, y: pos.y, size, onClick: handleClick })
@@ -458,3 +503,4 @@ ReactDOM.createRoot(document.getElementById('app')).render(e(App));
 </script>
 </body>
 </html>
+
