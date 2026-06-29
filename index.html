@@ -8,8 +8,8 @@
   body {
     margin: 0;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    background: #111827;
-    color: #e5e7eb;
+    background: #000000;
+    color: #ffffff;
     height: 100vh;
     display: flex;
     align-items: center;
@@ -31,49 +31,42 @@
     padding: 24px;
     text-align: center;
   }
-  h1 { font-size: 28px; margin: 0; }
-  p { color: #9ca3af; margin: 0; max-width: 420px; }
+  h1 { font-size: 28px; margin: 0; letter-spacing: 0.05em; }
+  p { color: #bbbbbb; margin: 0; max-width: 420px; }
   .btn {
-    background: #2563eb;
-    color: white;
-    border: none;
+    background: #ffffff;
+    color: #000000;
+    border: 1px solid #ffffff;
     padding: 12px 24px;
-    border-radius: 8px;
+    border-radius: 4px;
     font-size: 16px;
     cursor: pointer;
   }
-  .btn:hover { background: #1d4ed8; }
-  .btn.secondary { background: #374151; }
-  .btn.secondary:hover { background: #4b5563; }
+  .btn:hover { background: #cccccc; }
+  .btn.secondary { background: #000000; color: #ffffff; border: 1px solid #ffffff; }
+  .btn.secondary:hover { background: #1a1a1a; }
   .diffRow { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
   .box {
     position: absolute;
     width: 60px;
     height: 60px;
-    background: #f59e0b;
-    border-radius: 8px;
+    background: #ffffff;
+    border-radius: 4px;
     cursor: pointer;
-    box-shadow: 0 0 12px rgba(245,158,11,0.6);
   }
-  .box:hover { background: #fbbf24; }
+  .box:hover { background: #dddddd; }
   .levelLabel {
     position: absolute;
     top: 16px;
     left: 16px;
     font-size: 14px;
-    color: #6b7280;
+    color: #777777;
   }
   .quitBtn {
     position: absolute;
     top: 16px;
     right: 16px;
   }
-  .waitDots span {
-    animation: blink 1.4s infinite both;
-  }
-  .waitDots span:nth-child(2) { animation-delay: .2s; }
-  .waitDots span:nth-child(3) { animation-delay: .4s; }
-  @keyframes blink { 0%,80%,100% { opacity: 0; } 40% { opacity: 1; } }
 </style>
 </head>
 <body>
@@ -132,14 +125,12 @@ function App() {
   let content;
   if (screen === 'menu') {
     content = e('div', { className: 'screen' },
-      e('h1', null, '🎯 Click the Box'),
-      e('p', null, 'Three levels. Each one a little trickier than the last. Pick a difficulty to begin.'),
+      e('h1', null, 'Click the Box'),
       e('button', { className: 'btn', onClick: () => setScreen('difficulty') }, 'Start')
     );
   } else if (screen === 'difficulty') {
     content = e('div', { className: 'screen' },
       e('h1', null, 'Choose Difficulty'),
-      e('p', null, 'Level 3 timing depends on this choice — choose wisely.'),
       e('div', { className: 'diffRow' },
         e('button', { className: 'btn', onClick: () => startGame('easy') }, 'Easy'),
         e('button', { className: 'btn', onClick: () => startGame('normal') }, 'Normal'),
@@ -154,14 +145,12 @@ function App() {
     });
   } else if (screen === 'win') {
     content = e('div', { className: 'screen' },
-      e('h1', null, '🏆 You Win!'),
-      e('p', null, 'You clicked the box every time it mattered. Well played.'),
+      e('h1', null, 'You Win'),
       e('button', { className: 'btn', onClick: backToMenu }, 'Play Again')
     );
   } else if (screen === 'lose') {
     content = e('div', { className: 'screen' },
       e('h1', null, 'Game Over'),
-      e('p', null, 'The box is gone. No second chances — that was the deal.'),
       e('button', { className: 'btn', onClick: backToMenu }, 'Try Again')
     );
   }
@@ -179,12 +168,7 @@ function GameScreen({ level, difficulty, onLevelComplete, onFail, onQuit }) {
     return () => window.removeEventListener('resize', onResize);
   }, []);
 
-  const label = level === 1 ? 'Level 1 — Stationary Box'
-    : level === 2 ? 'Level 2 — Moving Box'
-    : 'Level 3 — The Wait';
-
   return e('div', { ref: containerRef, style: { position: 'absolute', inset: 0 } },
-    e('div', { className: 'levelLabel' }, label + '  ·  ' + difficulty),
     e('button', { className: 'btn secondary quitBtn', onClick: onQuit }, 'Quit'),
     level === 1 && e(Level1, { dims, onLevelComplete }),
     level === 2 && e(Level2, { dims, onLevelComplete }),
@@ -289,11 +273,7 @@ function Level3({ dims, difficulty, onLevelComplete, onFail }) {
   }
 
   return e(React.Fragment, null,
-    !boxVisible && e('div', { className: 'screen' },
-      e('h1', null, 'Waiting'),
-      e('p', null, 'A box will appear somewhere on screen for 5 seconds, at an unknown moment. Stay sharp', e('span', { className: 'waitDots' }, e('span', null,'.'), e('span', null,'.'), e('span', null,'.'))),
-      e('p', null, difficulty === 'easy' ? 'Sometime today.' : difficulty === 'normal' ? 'Sometime within the next year.' : 'Sometime within the next 100 years.')
-    ),
+    !boxVisible && e('div', { className: 'screen' }),
     boxVisible && e(Box, { x: pos.x, y: pos.y, size, onClick: handleClick })
   );
 }
