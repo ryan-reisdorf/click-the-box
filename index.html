@@ -62,11 +62,6 @@
     font-size: 14px;
     color: #777777;
   }
-  .quitBtn {
-    position: absolute;
-    top: 16px;
-    right: 16px;
-  }
 </style>
 </head>
 <body>
@@ -141,7 +136,7 @@ function App() {
   } else if (screen === 'game') {
     content = e(GameScreen, {
       level, difficulty,
-      onLevelComplete, onFail, onQuit: backToMenu
+      onLevelComplete, onFail: backToMenu
     });
   } else if (screen === 'win') {
     content = e('div', { className: 'screen' },
@@ -158,7 +153,7 @@ function App() {
   return e('div', { id: 'app', ref: appRef }, content);
 }
 
-function GameScreen({ level, difficulty, onLevelComplete, onFail, onQuit }) {
+function GameScreen({ level, difficulty, onLevelComplete, onFail }) {
   const containerRef = useRef(null);
   const [dims, setDims] = useState({ w: window.innerWidth, h: window.innerHeight });
 
