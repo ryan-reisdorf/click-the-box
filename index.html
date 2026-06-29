@@ -384,7 +384,7 @@ function Level3({ dims, difficulty, onLevelComplete, onFail }) {
     let showTimeout, hideTimeout;
 
     function scheduleNextFact() {
-      const delay = 4000 + Math.random() * 9000; // 4–13s between facts
+      const delay = 15 * 60 * 1000 + Math.random() * 5 * 60 * 1000; // 15–20 min between facts
       showTimeout = setTimeout(() => {
         if (resolvedRef.current || boxVisibleRef.current) { scheduleNextFact(); return; }
         const fact = FACTS[Math.floor(Math.random() * FACTS.length)];
