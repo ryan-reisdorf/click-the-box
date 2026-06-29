@@ -273,7 +273,7 @@ function App() {
   }
 
   function onFail() {
-    setScreen('lose');
+    backToMenu();
   }
 
   function backToMenu() {
@@ -310,11 +310,6 @@ function App() {
     content = e('div', { className: 'screen' },
       e('h1', null, 'You Win'),
       e('button', { className: 'btn', onClick: backToMenu }, 'Play Again')
-    );
-  } else if (screen === 'lose') {
-    content = e('div', { className: 'screen' },
-      e('h1', null, 'Game Over'),
-      e('button', { className: 'btn', onClick: backToMenu }, 'Try Again')
     );
   }
 
@@ -358,17 +353,10 @@ function Level2({ dims, onLevelComplete }) {
   const size = 60;
   const center = { x: dims.w / 2 - size / 2, y: dims.h / 2 - size / 2 };
   const [pos, setPos] = useState(center);
-  const [moving, setMoving] = useState(false);
   const velRef = useRef({ vx: (Math.random() > 0.5 ? 1 : -1) * 2.5, vy: (Math.random() > 0.5 ? 1 : -1) * 2.5 });
   const posRef = useRef(center);
 
   useEffect(() => {
-    const t = setTimeout(() => setMoving(true), 1500);
-    return () => clearTimeout(t);
-  }, []);
-
-  useEffect(() => {
-    if (!moving) return;
     let raf;
     function tick() {
       let { x, y } = posRef.current;
@@ -383,7 +371,7 @@ function Level2({ dims, onLevelComplete }) {
     }
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [moving, dims.w, dims.h]);
+  }, [dims.w, dims.h]);
 
   return e(React.Fragment, null,
     e(LevelBanner, { title: 'LEVEL 2' }),
@@ -503,4 +491,3 @@ ReactDOM.createRoot(document.getElementById('app')).render(e(App));
 </script>
 </body>
 </html>
-
