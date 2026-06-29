@@ -329,15 +329,12 @@ const { useState, useEffect, useRef } = React;
 const e = React.createElement;
 
 // Water gauge always depletes fully over 30 real minutes, and each click
-// refills exactly 5 minutes' worth, regardless of difficulty.
-const THIRST_DECAY = 100 / (30 * 60 * 5);   // per 200ms tick (5 ticks/sec)
+// refills exactly 5 minutes' worth.
+const THIRST_DECAY = 100 / (30 * 60);       // per second; tick loop applies *0.2 (200ms ticks)
 const WATER_PER_CLICK = 100 / (30 / 5);     // 5 minutes worth out of a 30-minute gauge
 
-const DIFFICULTY_SETTINGS = {
-  easy:   { thirstDecay: THIRST_DECAY, growthRate: 0.05556,   waterAmount: WATER_PER_CLICK, wiltRate: 0.05 },
-  normal: { thirstDecay: THIRST_DECAY, growthRate: 0.01389,   waterAmount: WATER_PER_CLICK, wiltRate: 0.02 },
-  hard:   { thirstDecay: THIRST_DECAY, growthRate: 0.003472,  waterAmount: WATER_PER_CLICK, wiltRate: 0.01 }
-};
+// Single set of plant mechanics (no difficulty modes). Full growth ~8 hours.
+const SETTINGS = { thirstDecay: THIRST_DECAY, growthRate: 0.003472, waterAmount: WATER_PER_CLICK, wiltRate: 0.01 };
 
 function LevelBanner({ title, instructions }) {
   return e('div', { className: 'level-banner' },
@@ -372,8 +369,8 @@ function Plant({ growth, wilted, bloomed }) {
   );
 }
 
-function GameScreen({ difficulty, onWin, onLose }) {
-  const settings = DIFFICULTY_SETTINGS[difficulty];
+function GameScreen({ onWin, onLose }) {
+  const settings = SETTINGS;
   const [growth, setGrowth] = useState(0);
   const [wilted, setWilted] = useState(false);
   const [bloomed, setBloomed] = useState(false);
@@ -441,8 +438,7 @@ function GameScreen({ difficulty, onWin, onLose }) {
 }
 
 function App() {
-  const [screen, setScreen] = useState('menu'); // menu, difficulty, game, win
-  const [difficulty, setDifficulty] = useState(null);
+  const [screen, setScreen] = useState('menu'); // menu, game, win
   const [ripples, setRipples] = useState([]);
   const appRef = useRef(null);
 
@@ -457,14 +453,8 @@ function App() {
     }, 400);
   }
 
-  function startGame(diff) {
-    setDifficulty(diff);
-    setScreen('game');
-  }
-
   function backToMenu() {
     setScreen('menu');
-    setDifficulty(null);
   }
 
   let content;
@@ -474,20 +464,10 @@ function App() {
         e('h1', { className: 'arcade-title', 'data-text': 'WATER THE PLANT' }, 'WATER THE PLANT')
       ),
       e('div', { className: 'insert-coin' }, 'PRESS START'),
-      e('button', { className: 'btn', onClick: () => setScreen('difficulty') }, 'Start')
-    );
-  } else if (screen === 'difficulty') {
-    content = e('div', { className: 'screen' },
-      e('h1', null, 'Choose Difficulty'),
-      e('div', { className: 'diffRow' },
-        e('button', { className: 'btn', onClick: () => startGame('easy') }, 'Easy'),
-        e('button', { className: 'btn', onClick: () => startGame('normal') }, 'Normal'),
-        e('button', { className: 'btn', onClick: () => startGame('hard') }, 'Hard')
-      ),
-      e('button', { className: 'btn secondary', onClick: backToMenu }, 'Back')
+      e('button', { className: 'btn', onClick: () => setScreen('game') }, 'Start')
     );
   } else if (screen === 'game') {
-    content = e(GameScreen, { difficulty, onWin: () => setScreen('win'), onLose: backToMenu });
+    content = e(GameScreen, { onWin: () => setScreen('win'), onLose: backToMenu });
   } else if (screen === 'win') {
     content = e('div', { className: 'screen' },
       e('h1', null, 'FULLY GROWN'),
