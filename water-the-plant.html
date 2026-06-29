@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Water the Plant</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Press Start 2P', monospace;
+    background: #000000;
+    color: #ffffff;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    image-rendering: pixelated;
+  }
+  #app {
+    width: 100%;
+    height: 100%;
+    position: relative;
+  }
+  #app::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+      to bottom,
+      rgba(255,255,255,0.05) 0px,
+      rgba(255,255,255,0.05) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+    mix-blend-mode: overlay;
+    z-index: 50;
+  }
+  .screen {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 28px;
+    padding: 24px;
+    text-align: center;
+  }
+  h1 { font-size: 28px; margin: 0; letter-spacing: 0.08em; }
+  p { color: #bbbbbb; margin: 0; max-width: 420px; font-size: 12px; line-height: 1.8; }
+  .btn {
+    font-family: 'Press Start 2P', monospace;
+    background: #000000;
+    color: #ffffff;
+    border: 3px solid #ffffff;
+    padding: 14px 22px;
+    border-radius: 0;
+    font-size: 13px;
+    cursor: pointer;
+    box-shadow: 4px 4px 0 #ffffff;
+    transition: transform 0.05s ease;
+  }
+  .btn:hover { background: #ffffff; color: #000000; }
+  .btn:active { transform: translate(4px, 4px); box-shadow: 0 0 0 #ffffff; }
+  .btn.secondary { background: #000000; color: #ffffff; }
+  .btn.secondary:hover { background: #1a1a1a; color: #ffffff; }
+  .diffRow { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; }
+
+  /* --- 8-bit glitch title (shared style) --- */
+  .arcade-title-wrap { position: relative; line-height: 1.6; }
+  .arcade-title {
+    font-size: 30px;
+    margin: 0;
+    color: #ffffff;
+    letter-spacing: 0.1em;
+    position: relative;
+    display: inline-block;
+    animation: flicker 4s infinite steps(1);
+    text-shadow:
+      3px 0 0 #000000,
+      -3px 0 0 #000000,
+      0 3px 0 #000000,
+      0 -3px 0 #000000,
+      4px 4px 0 #ffffff;
+  }
+  .arcade-title::before,
+  .arcade-title::after {
+    content: attr(data-text);
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    overflow: hidden;
+    color: #ffffff;
+  }
+  .arcade-title::before {
+    animation: glitchTop 5s infinite linear;
+    clip-path: inset(0 0 60% 0);
+    transform: translate(-2px, -1px);
+  }
+  .arcade-title::after {
+    animation: glitchBottom 6s infinite linear;
+    clip-path: inset(60% 0 0 0);
+    transform: translate(2px, 1px);
+  }
+  @keyframes flicker {
+    0%, 92%, 100% { opacity: 1; }
+    93% { opacity: 0.3; }
+    94% { opacity: 1; }
+    95% { opacity: 0.5; }
+    96% { opacity: 1; }
+  }
+  @keyframes glitchTop {
+    0%, 89%, 100% { transform: translate(-2px, -1px); opacity: 0; }
+    90% { transform: translate(-6px, -2px); opacity: 0.8; }
+    91% { transform: translate(3px, -1px); opacity: 0.8; }
+    92% { transform: translate(-2px, -1px); opacity: 0; }
+  }
+  @keyframes glitchBottom {
+    0%, 79%, 100% { transform: translate(2px, 1px); opacity: 0; }
+    80% { transform: translate(6px, 2px); opacity: 0.8; }
+    81% { transform: translate(-3px, 1px); opacity: 0.8; }
+    82% { transform: translate(2px, 1px); opacity: 0; }
+  }
+  .insert-coin {
+    font-size: 11px;
+    color: #ffffff;
+    margin-top: -6px;
+    animation: coinBlink 1.2s steps(1) infinite;
+    letter-spacing: 0.15em;
+  }
+  @keyframes coinBlink {
+    0%, 50% { opacity: 1; }
+    50.01%, 100% { opacity: 0.15; }
+  }
+
+  /* --- click ripple feedback (shared) --- */
+  .click-ripple {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    border: 2px solid #ffffff;
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+    z-index: 999;
+    animation: rippleOut 0.35s ease-out forwards;
+  }
+  @keyframes rippleOut {
+    0% { width: 6px; height: 6px; opacity: 1; }
+    100% { width: 36px; height: 36px; opacity: 0; }
+  }
+
+  /* --- level banner (shared) --- */
+  .level-banner {
+    position: absolute;
+    top: 32px;
+    left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+    z-index: 20;
+  }
+  .level-banner .banner-title {
+    font-size: 16px;
+    letter-spacing: 0.15em;
+    color: #ffffff;
+    border: 2px solid #ffffff;
+    padding: 10px 18px;
+    background: #000000;
+    box-shadow: 3px 3px 0 #ffffff;
+  }
+  .level-banner .banner-instructions {
+    margin-top: 14px;
+    font-size: 10px;
+    color: #bbbbbb;
+    letter-spacing: 0.05em;
+  }
+
+  /* --- game scene --- */
+  .scene {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    cursor: pointer;
+  }
+  .ground {
+    width: 100%;
+    height: 6px;
+    background: #ffffff;
+    box-shadow: 0 -2px 0 #000000;
+  }
+  .plant-wrap {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 0;
+  }
+  .pot {
+    width: 90px;
+    height: 60px;
+    background: #ffffff;
+    clip-path: polygon(10% 0%, 90% 0%, 100% 100%, 0% 100%);
+    position: relative;
+    z-index: 2;
+  }
+  .pot-rim {
+    width: 104px;
+    height: 14px;
+    background: #ffffff;
+    margin-bottom: -2px;
+    z-index: 3;
+  }
+  .stem {
+    width: 8px;
+    background: #ffffff;
+    transition: height 0.4s ease, transform 0.6s ease;
+    transform-origin: bottom center;
+    position: relative;
+    z-index: 1;
+  }
+  .stem.wilted { transform: rotate(18deg); }
+  .leaf {
+    position: absolute;
+    width: 34px;
+    height: 16px;
+    background: #ffffff;
+    border-radius: 50% 50% 50% 0;
+    opacity: 0;
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+  .leaf.show { opacity: 1; }
+  .leaf.left { left: -30px; transform: rotate(20deg); border-radius: 50% 50% 0 50%; }
+  .leaf.right { right: -30px; transform: rotate(-20deg) scaleX(-1); border-radius: 50% 50% 0 50%; }
+  .leaf.wilted { opacity: 0.35; transform: rotate(50deg) translateY(6px); }
+  .leaf.right.wilted { transform: rotate(-50deg) translateY(6px) scaleX(-1); }
+  .flower {
+    position: absolute;
+    top: -26px;
+    width: 36px;
+    height: 36px;
+    opacity: 0;
+    transform: scale(0.3);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+  .flower.show { opacity: 1; transform: scale(1); }
+  .petal {
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    background: #ffffff;
+    border-radius: 50%;
+  }
+  .petal:nth-child(1) { top: 0; left: 10px; }
+  .petal:nth-child(2) { top: 10px; left: 20px; }
+  .petal:nth-child(3) { top: 20px; left: 10px; }
+  .petal:nth-child(4) { top: 10px; left: 0px; }
+  .flower-center {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    width: 16px;
+    height: 16px;
+    background: #000000;
+    border-radius: 50%;
+    border: 2px solid #ffffff;
+  }
+
+  .meter-wrap {
+    position: absolute;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: center;
+    z-index: 20;
+  }
+  .meter-label {
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    color: #bbbbbb;
+  }
+  .meter {
+    width: 200px;
+    height: 18px;
+    border: 2px solid #ffffff;
+    position: relative;
+    background: #000000;
+  }
+  .meter-fill {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    background: #ffffff;
+    transition: width 0.2s linear;
+  }
+  .meter.thirst .meter-fill { background: repeating-linear-gradient(45deg, #ffffff 0, #ffffff 4px, #000000 4px, #000000 8px); }
+
+  .can-hint {
+    font-size: 10px;
+    color: #777777;
+    letter-spacing: 0.08em;
+    margin-top: 4px;
+  }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script>
+const { useState, useEffect, useRef } = React;
+const e = React.createElement;
+
+const DIFFICULTY_SETTINGS = {
+  easy:   { thirstDecay: 2.2, growthRate: 0.9, waterAmount: 28, wiltRate: 1.2 },
+  normal: { thirstDecay: 3.4, growthRate: 0.75, waterAmount: 22, wiltRate: 1.8 },
+  hard:   { thirstDecay: 5.0, growthRate: 0.6, waterAmount: 16, wiltRate: 2.6 }
+};
+
+function LevelBanner({ title, instructions }) {
+  return e('div', { className: 'level-banner' },
+    e('div', { className: 'banner-title' }, title),
+    instructions && e('div', { className: 'banner-instructions' }, instructions)
+  );
+}
+
+function Plant({ growth, wilted }) {
+  const stemHeight = 20 + growth * 1.6; // px
+  const showLeaf1 = growth > 20;
+  const showLeaf2 = growth > 50;
+  const showFlower = growth >= 95;
+
+  return e('div', { className: 'plant-wrap' },
+    showFlower && e('div', { className: 'flower show' },
+      e('div', { className: 'petal' }),
+      e('div', { className: 'petal' }),
+      e('div', { className: 'petal' }),
+      e('div', { className: 'petal' }),
+      e('div', { className: 'flower-center' })
+    ),
+    e('div', {
+      className: 'stem' + (wilted ? ' wilted' : ''),
+      style: { height: stemHeight + 'px' }
+    },
+      e('div', { className: 'leaf left' + (showLeaf1 ? ' show' : '') + (wilted ? ' wilted' : ''), style: { top: stemHeight * 0.55 + 'px' } }),
+      e('div', { className: 'leaf right' + (showLeaf2 ? ' show' : '') + (wilted ? ' wilted' : ''), style: { top: stemHeight * 0.25 + 'px' } })
+    ),
+    e('div', { className: 'pot-rim' }),
+    e('div', { className: 'pot' })
+  );
+}
+
+function GameScreen({ difficulty, onWin, onQuit }) {
+  const settings = DIFFICULTY_SETTINGS[difficulty];
+  const [growth, setGrowth] = useState(0);
+  const [thirst, setThirst] = useState(100);
+  const [wilted, setWilted] = useState(false);
+  const growthRef = useRef(0);
+  const thirstRef = useRef(100);
+  const resolvedRef = useRef(false);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (resolvedRef.current) return;
+      let t = thirstRef.current - settings.thirstDecay * 0.2;
+      t = Math.max(0, Math.min(100, t));
+      thirstRef.current = t;
+      setThirst(t);
+
+      let g = growthRef.current;
+      if (t > 0) {
+        g += settings.growthRate * 0.2;
+        setWilted(false);
+      } else {
+        g -= settings.wiltRate * 0.2;
+        setWilted(true);
+      }
+      g = Math.max(0, Math.min(100, g));
+      growthRef.current = g;
+      setGrowth(g);
+
+      if (g >= 100 && !resolvedRef.current) {
+        resolvedRef.current = true;
+        onWin();
+      }
+    }, 200);
+    return () => clearInterval(interval);
+  }, [settings, onWin]);
+
+  function handleWater() {
+    if (resolvedRef.current) return;
+    let t = Math.min(100, thirstRef.current + settings.waterAmount);
+    thirstRef.current = t;
+    setThirst(t);
+  }
+
+  return e('div', { className: 'scene', onClick: handleWater },
+    e(LevelBanner, { title: 'WATER THE PLANT', instructions: 'CLICK ANYWHERE TO WATER' }),
+    e('div', { className: 'meter-wrap' },
+      e('div', { className: 'meter-label' }, 'GROWTH'),
+      e('div', { className: 'meter' },
+        e('div', { className: 'meter-fill', style: { width: growth + '%' } })
+      ),
+      e('div', { className: 'meter-label' }, 'WATER'),
+      e('div', { className: 'meter thirst' },
+        e('div', { className: 'meter-fill', style: { width: thirst + '%' } })
+      ),
+      e('div', { className: 'can-hint' }, wilted ? 'WILTING — WATER IT NOW' : ' ')
+    ),
+    e(Plant, { growth, wilted }),
+    e('div', { className: 'ground' })
+  );
+}
+
+function App() {
+  const [screen, setScreen] = useState('menu'); // menu, difficulty, game, win
+  const [difficulty, setDifficulty] = useState(null);
+  const [ripples, setRipples] = useState([]);
+  const appRef = useRef(null);
+
+  function handleGlobalClick(ev) {
+    const id = Math.random().toString(36).slice(2);
+    const rect = appRef.current.getBoundingClientRect();
+    const x = ev.clientX - rect.left;
+    const y = ev.clientY - rect.top;
+    setRipples(r => [...r, { id, x, y }]);
+    setTimeout(() => {
+      setRipples(r => r.filter(rp => rp.id !== id));
+    }, 400);
+  }
+
+  function startGame(diff) {
+    setDifficulty(diff);
+    setScreen('game');
+  }
+
+  function backToMenu() {
+    setScreen('menu');
+    setDifficulty(null);
+  }
+
+  let content;
+  if (screen === 'menu') {
+    content = e('div', { className: 'screen' },
+      e('div', { className: 'arcade-title-wrap' },
+        e('h1', { className: 'arcade-title', 'data-text': 'WATER THE PLANT' }, 'WATER THE PLANT')
+      ),
+      e('div', { className: 'insert-coin' }, 'PRESS START'),
+      e('button', { className: 'btn', onClick: () => setScreen('difficulty') }, 'Start')
+    );
+  } else if (screen === 'difficulty') {
+    content = e('div', { className: 'screen' },
+      e('h1', null, 'Choose Difficulty'),
+      e('div', { className: 'diffRow' },
+        e('button', { className: 'btn', onClick: () => startGame('easy') }, 'Easy'),
+        e('button', { className: 'btn', onClick: () => startGame('normal') }, 'Normal'),
+        e('button', { className: 'btn', onClick: () => startGame('hard') }, 'Hard')
+      ),
+      e('button', { className: 'btn secondary', onClick: backToMenu }, 'Back')
+    );
+  } else if (screen === 'game') {
+    content = e(GameScreen, { difficulty, onWin: () => setScreen('win'), onQuit: backToMenu });
+  } else if (screen === 'win') {
+    content = e('div', { className: 'screen' },
+      e('h1', null, 'FULLY GROWN'),
+      e('button', { className: 'btn', onClick: backToMenu }, 'Play Again')
+    );
+  }
+
+  return e('div', { id: 'app', ref: appRef, onClick: handleGlobalClick },
+    content,
+    ripples.map(rp => e('div', {
+      key: rp.id,
+      className: 'click-ripple',
+      style: { left: rp.x + 'px', top: rp.y + 'px' }
+    }))
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('app')).render(e(App));
+</script>
+</body>
+</html>
