@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Click the Box</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: #111827;
+    color: #e5e7eb;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  #app {
+    width: 100%;
+    height: 100%;
+    position: relative;
+  }
+  .screen {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 24px;
+    text-align: center;
+  }
+  h1 { font-size: 28px; margin: 0; }
+  p { color: #9ca3af; margin: 0; max-width: 420px; }
+  .btn {
+    background: #2563eb;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 16px;
+    cursor: pointer;
+  }
+  .btn:hover { background: #1d4ed8; }
+  .btn.secondary { background: #374151; }
+  .btn.secondary:hover { background: #4b5563; }
+  .diffRow { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+  .box {
+    position: absolute;
+    width: 60px;
+    height: 60px;
+    background: #f59e0b;
+    border-radius: 8px;
+    cursor: pointer;
+    box-shadow: 0 0 12px rgba(245,158,11,0.6);
+  }
+  .box:hover { background: #fbbf24; }
+  .levelLabel {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    font-size: 14px;
+    color: #6b7280;
+  }
+  .quitBtn {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+  }
+  .waitDots span {
+    animation: blink 1.4s infinite both;
+  }
+  .waitDots span:nth-child(2) { animation-delay: .2s; }
+  .waitDots span:nth-child(3) { animation-delay: .4s; }
+  @keyframes blink { 0%,80%,100% { opacity: 0; } 40% { opacity: 1; } }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script>
+const { useState, useEffect, useRef } = React;
+const e = React.createElement;
+
+function Box({ x, y, onClick, size = 60 }) {
+  return e('div', {
+    className: 'box',
+    style: { left: x + 'px', top: y + 'px', width: size + 'px', height: size + 'px' },
+    onClick
+  });
+}
+
+function randomPos(areaW, areaH, size) {
+  return {
+    x: Math.random() * Math.max(1, areaW - size),
+    y: Math.random() * Math.max(1, areaH - size)
+  };
+}
+
+function App() {
+  const [screen, setScreen] = useState('menu'); // menu, difficulty, game, win, lose, gameover
+  const [difficulty, setDifficulty] = useState(null);
+  const [level, setLevel] = useState(1);
+  const appRef = useRef(null);
+
+  function startGame(diff) {
+    setDifficulty(diff);
+    setLevel(1);
+    setScreen('game');
+  }
+
+  function onLevelComplete() {
+    if (level >= 3) {
+      setScreen('win');
+    } else {
+      setLevel(level + 1);
+    }
+  }
+
+  function onFail() {
+    setScreen('lose');
+  }
+
+  function backToMenu() {
+    setScreen('menu');
+    setDifficulty(null);
+    setLevel(1);
+  }
+
+  let content;
+  if (screen === 'menu') {
+    content = e('div', { className: 'screen' },
+      e('h1', null, '🎯 Click the Box'),
+      e('p', null, 'Three levels. Each one a little trickier than the last. Pick a difficulty to begin.'),
+      e('button', { className: 'btn', onClick: () => setScreen('difficulty') }, 'Start')
+    );
+  } else if (screen === 'difficulty') {
+    content = e('div', { className: 'screen' },
+      e('h1', null, 'Choose Difficulty'),
+      e('p', null, 'Level 3 timing depends on this choice — choose wisely.'),
+      e('div', { className: 'diffRow' },
+        e('button', { className: 'btn', onClick: () => startGame('easy') }, 'Easy'),
+        e('button', { className: 'btn', onClick: () => startGame('normal') }, 'Normal'),
+        e('button', { className: 'btn', onClick: () => startGame('hard') }, 'Hard')
+      ),
+      e('button', { className: 'btn secondary', onClick: backToMenu }, 'Back')
+    );
+  } else if (screen === 'game') {
+    content = e(GameScreen, {
+      level, difficulty,
+      onLevelComplete, onFail, onQuit: backToMenu
+    });
+  } else if (screen === 'win') {
+    content = e('div', { className: 'screen' },
+      e('h1', null, '🏆 You Win!'),
+      e('p', null, 'You clicked the box every time it mattered. Well played.'),
+      e('button', { className: 'btn', onClick: backToMenu }, 'Play Again')
+    );
+  } else if (screen === 'lose') {
+    content = e('div', { className: 'screen' },
+      e('h1', null, 'Game Over'),
+      e('p', null, 'The box is gone. No second chances — that was the deal.'),
+      e('button', { className: 'btn', onClick: backToMenu }, 'Try Again')
+    );
+  }
+
+  return e('div', { id: 'app', ref: appRef }, content);
+}
+
+function GameScreen({ level, difficulty, onLevelComplete, onFail, onQuit }) {
+  const containerRef = useRef(null);
+  const [dims, setDims] = useState({ w: window.innerWidth, h: window.innerHeight });
+
+  useEffect(() => {
+    function onResize() { setDims({ w: window.innerWidth, h: window.innerHeight }); }
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  const label = level === 1 ? 'Level 1 — Stationary Box'
+    : level === 2 ? 'Level 2 — Moving Box'
+    : 'Level 3 — The Wait';
+
+  return e('div', { ref: containerRef, style: { position: 'absolute', inset: 0 } },
+    e('div', { className: 'levelLabel' }, label + '  ·  ' + difficulty),
+    e('button', { className: 'btn secondary quitBtn', onClick: onQuit }, 'Quit'),
+    level === 1 && e(Level1, { dims, onLevelComplete }),
+    level === 2 && e(Level2, { dims, onLevelComplete }),
+    level === 3 && e(Level3, { dims, difficulty, onLevelComplete, onFail })
+  );
+}
+
+function Level1({ dims, onLevelComplete }) {
+  const size = 60;
+  const [pos] = useState(() => randomPos(dims.w, dims.h, size));
+  return e(Box, { x: pos.x, y: pos.y, size, onClick: onLevelComplete });
+}
+
+function Level2({ dims, onLevelComplete }) {
+  const size = 60;
+  const [pos, setPos] = useState(() => randomPos(dims.w, dims.h, size));
+  const velRef = useRef({ vx: (Math.random() > 0.5 ? 1 : -1) * 2.5, vy: (Math.random() > 0.5 ? 1 : -1) * 2.5 });
+  const posRef = useRef(pos);
+
+  useEffect(() => {
+    let raf;
+    function tick() {
+      let { x, y } = posRef.current;
+      let { vx, vy } = velRef.current;
+      x += vx; y += vy;
+      if (x <= 0 || x >= dims.w - size) { vx = -vx; x = Math.max(0, Math.min(x, dims.w - size)); }
+      if (y <= 0 || y >= dims.h - size) { vy = -vy; y = Math.max(0, Math.min(y, dims.h - size)); }
+      posRef.current = { x, y };
+      velRef.current = { vx, vy };
+      setPos({ x, y });
+      raf = requestAnimationFrame(tick);
+    }
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [dims.w, dims.h]);
+
+  return e(Box, { x: pos.x, y: pos.y, size, onClick: onLevelComplete });
+}
+
+// Level 3: pick a random target time within range based on difficulty.
+// Box appears exactly at that time, stays 5s, then vanishes if unclicked.
+// No feedback on miss — game simply ends (handled by parent via onFail after window closes).
+function Level3({ dims, difficulty, onLevelComplete, onFail }) {
+  const size = 60;
+  const [targetTime] = useState(() => {
+    const now = Date.now();
+    let maxOffsetMs;
+    if (difficulty === 'easy') {
+      // sometime later today (up to end of day, fallback to next 24h if past midnight edge)
+      const endOfDay = new Date();
+      endOfDay.setHours(23, 59, 59, 999);
+      maxOffsetMs = Math.max(5000, endOfDay.getTime() - now);
+    } else if (difficulty === 'normal') {
+      maxOffsetMs = 365 * 24 * 60 * 60 * 1000; // up to a year
+    } else {
+      maxOffsetMs = 100 * 365 * 24 * 60 * 60 * 1000; // up to 100 years
+    }
+    const offset = Math.random() * maxOffsetMs;
+    return now + offset;
+  });
+
+  const [boxVisible, setBoxVisible] = useState(false);
+  const [pos, setPos] = useState(() => randomPos(dims.w, dims.h, size));
+  const resolvedRef = useRef(false);
+
+  useEffect(() => {
+    let showTimer, hideTimer, checkInterval;
+
+    const msUntil = targetTime - Date.now();
+
+    function showBox() {
+      if (resolvedRef.current) return;
+      setPos(randomPos(dims.w, dims.h, size));
+      setBoxVisible(true);
+      hideTimer = setTimeout(() => {
+        setBoxVisible(false);
+        if (!resolvedRef.current) {
+          resolvedRef.current = true;
+          onFail();
+        }
+      }, 5000);
+    }
+
+    if (msUntil <= 0) {
+      showBox();
+    } else {
+      showTimer = setTimeout(showBox, msUntil);
+    }
+
+    return () => {
+      clearTimeout(showTimer);
+      clearTimeout(hideTimer);
+      clearInterval(checkInterval);
+    };
+  }, [targetTime, dims.w, dims.h, onFail]);
+
+  function handleClick() {
+    if (resolvedRef.current) return;
+    resolvedRef.current = true;
+    setBoxVisible(false);
+    onLevelComplete();
+  }
+
+  return e(React.Fragment, null,
+    !boxVisible && e('div', { className: 'screen' },
+      e('h1', null, 'Waiting'),
+      e('p', null, 'A box will appear somewhere on screen for 5 seconds, at an unknown moment. Stay sharp', e('span', { className: 'waitDots' }, e('span', null,'.'), e('span', null,'.'), e('span', null,'.'))),
+      e('p', null, difficulty === 'easy' ? 'Sometime today.' : difficulty === 'normal' ? 'Sometime within the next year.' : 'Sometime within the next 100 years.')
+    ),
+    boxVisible && e(Box, { x: pos.x, y: pos.y, size, onClick: handleClick })
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('app')).render(e(App));
+</script>
+</body>
+</html>
