@@ -169,7 +169,6 @@ function GameScreen({ level, difficulty, onLevelComplete, onFail, onQuit }) {
   }, []);
 
   return e('div', { ref: containerRef, style: { position: 'absolute', inset: 0 } },
-    e('button', { className: 'btn secondary quitBtn', onClick: onQuit }, 'Quit'),
     level === 1 && e(Level1, { dims, onLevelComplete }),
     level === 2 && e(Level2, { dims, onLevelComplete }),
     level === 3 && e(Level3, { dims, difficulty, onLevelComplete, onFail })
