@@ -226,6 +226,20 @@
     color: #bbbbbb;
     letter-spacing: 0.05em;
   }
+  .click-ripple {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    border: 2px solid #ffffff;
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+    z-index: 999;
+    animation: rippleOut 0.35s ease-out forwards;
+  }
+  @keyframes rippleOut {
+    0% { width: 6px; height: 6px; opacity: 1; }
+    100% { width: 36px; height: 36px; opacity: 0; }
+  }
 </style>
 </head>
 <body>
@@ -253,10 +267,22 @@ function randomPos(areaW, areaH, size) {
 }
 
 function App() {
-  const [screen, setScreen] = useState('menu'); // menu, difficulty, game, win, lose, gameover
+  const [screen, setScreen] = useState('menu'); // menu, difficulty, game, win
   const [difficulty, setDifficulty] = useState(null);
   const [level, setLevel] = useState(1);
+  const [ripples, setRipples] = useState([]);
   const appRef = useRef(null);
+
+  function handleGlobalClick(ev) {
+    const id = Math.random().toString(36).slice(2);
+    const rect = appRef.current.getBoundingClientRect();
+    const x = ev.clientX - rect.left;
+    const y = ev.clientY - rect.top;
+    setRipples(r => [...r, { id, x, y }]);
+    setTimeout(() => {
+      setRipples(r => r.filter(rp => rp.id !== id));
+    }, 400);
+  }
 
   function startGame(diff) {
     setDifficulty(diff);
@@ -313,7 +339,14 @@ function App() {
     );
   }
 
-  return e('div', { id: 'app', ref: appRef }, content);
+  return e('div', { id: 'app', ref: appRef, onClick: handleGlobalClick },
+    content,
+    ripples.map(rp => e('div', {
+      key: rp.id,
+      className: 'click-ripple',
+      style: { left: rp.x + 'px', top: rp.y + 'px' }
+    }))
+  );
 }
 
 function GameScreen({ level, difficulty, onLevelComplete, onFail, onQuit }) {
